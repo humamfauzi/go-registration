@@ -1,0 +1,23 @@
+{
+  {
+  "database": [
+    {
+      "vendor": "cassandra",
+      "username": "hello",
+      "password": "x3",
+      "database": "hehehehe"
+    },
+    {
+      "vendor": "mysql",
+      "username": "hello",
+      "password": "x3",
+      "database": "hehehehe"
+    },
+    {
+      "vendor": "postgres",
+      "username": "hello2",
+      "password": "x4",
+      "database": "alskdjoiqw"
+    }
+  ]
+}
