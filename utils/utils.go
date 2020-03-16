@@ -1,4 +1,4 @@
-package registration
+package utils
 
 import (
 	"encoding/json"
@@ -21,11 +21,11 @@ func (sa StringArray) Includes(checkString string) bool {
 	return false
 }
 
-func (sa StringArray) IncludesConcurrent(checkString string) bool {
-	arraySize := len(sa)
-	return true
-	// waitgroup.
-}
+// func (sa StringArray) IncludesConcurrent(checkString string) bool {
+// 	arraySize := len(sa)
+// 	return true
+// 	waitgroup.
+// }
 
 func unpackJson(request io.Reader) (interface{}, error) {
 	var buffer interface{}

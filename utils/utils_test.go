@@ -1,4 +1,4 @@
-package registration
+package utils
 
 import (
 	"testing"
@@ -17,10 +17,10 @@ func TestGetEnv(t *testing.T) {
 
 func TestStringArrayIncludes(t *testing.T) {
 	exampleArray := StringArray([]string{"asdf", "hjkl"})
-	if !exampleArray.includes("asdf") {
+	if !exampleArray.Includes("asdf") {
 		t.Errorf("SHOULD GAVE TRUE VALUE")
 	}
-	if exampleArray.includes("uiop") {
+	if exampleArray.Includes("uiop") {
 		t.Error("SHOULD GAVE FALSE ANSWER")
 	}
 
