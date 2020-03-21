@@ -4,16 +4,16 @@ import (
 	"testing"
 )
 
-func TestGetEnv(t *testing.T) {
-	database := GetEnv("database.mysql")
-	switch database.(type) {
-	case nil:
-		t.Errorf("DATABASE SHOULD NOT EMPTY")
-	case map[string]string:
-		mapDatabase := database.(map[string]string)
-		t.Logf(mapDatabase["database"])
-	}
-}
+// func TestGetEnv(t *testing.T) {
+// 	database := GetEnv("database.mysql")
+// 	switch database.(type) {
+// 	case nil:
+// 		t.Errorf("DATABASE SHOULD NOT EMPTY")
+// 	case map[string]string:
+// 		mapDatabase := database.(map[string]string)
+// 		t.Logf(mapDatabase["database"])
+// 	}
+// }
 
 func TestStringArrayIncludes(t *testing.T) {
 	exampleArray := StringArray([]string{"asdf", "hjkl"})
@@ -24,4 +24,9 @@ func TestStringArrayIncludes(t *testing.T) {
 		t.Error("SHOULD GAVE FALSE ANSWER")
 	}
 
+}
+
+func TestGenerateUUID(t *testing.T) {
+	result := GenerateUUID("user", 5)
+	t.Log(result)
 }

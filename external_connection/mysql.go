@@ -2,7 +2,6 @@ package external_connection
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/humamfauzi/go-registration/utils"
 )
@@ -20,27 +19,26 @@ func ConnectToDB() *sql.DB {
 
 func ComposeConnectionFromEnv(connection interface{}) string {
 	switch connection.(type) {
-	case map[string]string:
-		parsed := connection.(map[string]string)
-		composed := parsed["username"] + ":"
-		composed += parsed["password"] + "@"
-		composed += parsed["protocol"] + "("
-		composed += parsed["address"] + ")"
-		composed += parsed["dbname"]
+	case map[string]interface{}:
+		parsed := connection.(map[string]interface{})
+		composed := utils.InterpretInterfaceString(parsed["username"], "root")
+		composed += utils.InterpretInterfaceString(parsed["password"], "")
+		composed += utils.InterpretInterfaceString(parsed["protocol"], "tcp")
+		composed += utils.InterpretInterfaceString(parsed["adress"], "localhost")
+		composed += utils.InterpretInterfaceString(parsed["dbname"], "try1")
 		composed += GetAdditionalDbConnectionParams(parsed)
-		fmt.Println(composed)
 		return composed
 	default:
 		panic("FAILED TO PARSE DATABASE PROFILE")
 	}
 }
 
-func GetAdditionalDbConnectionParams(connectionParams map[string]string) string {
+func GetAdditionalDbConnectionParams(connectionParams map[string]interface{}) string {
 	reservedKey := utils.StringArray([]string{"username", "password", "protocol", "address", "dbname"})
 	var connParams string
 	for key, value := range connectionParams {
 		if !reservedKey.Includes(key) {
-			connParams += key + "=" + value + "&"
+			connParams += key + "=" + value.(string) + "&"
 		}
 	}
 	if connParams != "" {

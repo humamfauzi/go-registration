@@ -1,17 +1,8 @@
 package registration
 
 import (
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
-
-type User struct {
-	gorm.Model
-	Email    string
-	Password string
-	Name     string
-	Token    string
-}
 
 type UserMap map[string]string
 
