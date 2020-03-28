@@ -2,6 +2,7 @@ package registration
 
 import (
 	"errors"
+	"time"
 
 	"github.com/humamfauzi/go-registration/utils"
 
@@ -14,12 +15,14 @@ const (
 )
 
 type User struct {
-	gorm.Model
-	Email    string
-	Password string
-	Name     string
-	Token    string
-	Id       string
+	Id        string  `gorm:"type:varchar(100);unique_index;primary_key" json:"id"`
+	Email     string  `gorm:"type:varchar(255)"`
+	Password  string  `gorm:"type:varchar(255)"`
+	Name      string  `gorm:"type:varchar(255)`
+	Token     *string `gorm:"type:varchar(255)`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt time.Time
 }
 
 func (u *User) SetEmail(email string) {
@@ -31,7 +34,7 @@ func (u *User) SetPassword(password string) {
 }
 
 func (u *User) SetToken(token string) {
-	u.Token = token
+	u.Token = &token
 }
 
 func (u *User) SetName(name string) {
@@ -46,10 +49,11 @@ func (u User) AutoMigrate(db *gorm.DB) {
 	db.AutoMigrate(&u)
 }
 
-func (u User) CreateUser(db *gorm.DB) {
+func (u User) CreateUser(db *gorm.DB) User {
 	uniqId := utils.GenerateUUID("user", 2)
 	u.SetId(uniqId)
 	db.Create(&u)
+	return u
 }
 
 func (u User) DeleteUser(db *gorm.DB) (bool, error) {
@@ -99,8 +103,9 @@ func (u Users) BulkUpdateUser(db *gorm.DB, newUsersProfile Users) error {
 
 func (u Users) BulkCreateUser(db *gorm.DB) error {
 	for index := 0; index < len(u); index++ {
-		u.setId
-		db.Create(&u)
+		uniqId := utils.GenerateUUID("user", 2)
+		u[index].SetId(uniqId)
+		db.Create(&u[index])
 	}
 	return nil
 }

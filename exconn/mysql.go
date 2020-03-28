@@ -1,17 +1,16 @@
-package external_connection
+package exconn
 
 import (
-	"database/sql"
-
 	"github.com/humamfauzi/go-registration/utils"
+	"github.com/jinzhu/gorm"
 )
 
-func ConnectToDB() *sql.DB {
+func ConnectToDB() *gorm.DB {
 	mysqlEnv := utils.GetEnv("database.mysql")
 	connProfile := ComposeConnectionFromEnv(mysqlEnv)
-	conn, err := sql.Open("mysql", connProfile)
+	conn, err := gorm.Open("mysql", connProfile)
 	if err != nil {
-		panic("CANNOT CONNECT TO DATABASE")
+		panic(err)
 	}
 	return conn
 
@@ -21,10 +20,10 @@ func ComposeConnectionFromEnv(connection interface{}) string {
 	switch connection.(type) {
 	case map[string]interface{}:
 		parsed := connection.(map[string]interface{})
-		composed := utils.InterpretInterfaceString(parsed["username"], "root")
-		composed += utils.InterpretInterfaceString(parsed["password"], "")
-		composed += utils.InterpretInterfaceString(parsed["protocol"], "tcp")
-		composed += utils.InterpretInterfaceString(parsed["adress"], "localhost")
+		composed := utils.InterpretInterfaceString(parsed["username"], "root") + ":"
+		composed += utils.InterpretInterfaceString(parsed["password"], "") + "@"
+		composed += utils.InterpretInterfaceString(parsed["protocol"], "tcp") + "("
+		composed += utils.InterpretInterfaceString(parsed["adress"], "localhost") + ")/"
 		composed += utils.InterpretInterfaceString(parsed["dbname"], "try1")
 		composed += GetAdditionalDbConnectionParams(parsed)
 		return composed
@@ -38,6 +37,9 @@ func GetAdditionalDbConnectionParams(connectionParams map[string]interface{}) st
 	var connParams string
 	for key, value := range connectionParams {
 		if !reservedKey.Includes(key) {
+			if key == "parsetime" {
+				key = "parseTime"
+			}
 			connParams += key + "=" + value.(string) + "&"
 		}
 	}
