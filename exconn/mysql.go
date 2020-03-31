@@ -5,9 +5,9 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func ConnectToDB() *gorm.DB {
+func ConnectToMySQL() *gorm.DB {
 	mysqlEnv := utils.GetEnv("database.mysql")
-	connProfile := ComposeConnectionFromEnv(mysqlEnv)
+	connProfile := ComposeConnectionFromEnv(mysqlEnv, "mysql")
 	conn, err := gorm.Open("mysql", connProfile)
 	if err != nil {
 		panic(err)
@@ -15,21 +15,8 @@ func ConnectToDB() *gorm.DB {
 	return conn
 
 }
-
-func ComposeConnectionFromEnv(connection interface{}) string {
-	switch connection.(type) {
-	case map[string]interface{}:
-		parsed := connection.(map[string]interface{})
-		composed := utils.InterpretInterfaceString(parsed["username"], "root") + ":"
-		composed += utils.InterpretInterfaceString(parsed["password"], "") + "@"
-		composed += utils.InterpretInterfaceString(parsed["protocol"], "tcp") + "("
-		composed += utils.InterpretInterfaceString(parsed["adress"], "localhost") + ")/"
-		composed += utils.InterpretInterfaceString(parsed["dbname"], "try1")
-		composed += GetAdditionalDbConnectionParams(parsed)
-		return composed
-	default:
-		panic("FAILED TO PARSE DATABASE PROFILE")
-	}
+func CloseConnectionMySQL(db *gorm.DB) {
+	db.Close()
 }
 
 func GetAdditionalDbConnectionParams(connectionParams map[string]interface{}) string {

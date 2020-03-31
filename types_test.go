@@ -3,9 +3,8 @@ package registration
 import (
 	"testing"
 
-	"github.com/humamfauzi/go-registration/utils"
-
 	"github.com/humamfauzi/go-registration/exconn"
+	"github.com/humamfauzi/go-registration/utils"
 )
 
 const ()
@@ -64,7 +63,7 @@ func BenchmarkInsertUserMillion(b *testing.B) {
 	conn := exconn.ConnectToDB()
 	defer conn.Close()
 	for n := 0; n < b.N; n++ {
-		millionUser := (make(Users, 100))
+		millionUser := (make(Users, 10000))
 		var user User
 		for i := 0; i < 100; i++ {
 			user = User{
@@ -76,5 +75,25 @@ func BenchmarkInsertUserMillion(b *testing.B) {
 			millionUser[i] = user
 		}
 		millionUser.BulkCreateUser(conn)
+	}
+}
+
+func BenchmarkAppendString(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		var someString string
+		for i := 0; i < 100; i++ {
+			someString += "a"
+		}
+	}
+}
+
+func BenchmarkArrayString(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		someString := make([]rune, 100)
+		for i := 0; i < 100; i++ {
+			someString[i] = 'a'
+		}
+		_ = string(someString)
+
 	}
 }
