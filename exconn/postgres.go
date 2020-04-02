@@ -9,6 +9,7 @@ import (
 func ConnectToPostgres() *gorm.DB {
 	postgresEnv := utils.GetEnv("database.postgres")
 	connProfile := ComposeConnectionFromEnv(postgresEnv, "postgres")
+	conn, err := gorm.Open("postgres", connProfile)
 	if err != nil {
 		panic(err)
 	}

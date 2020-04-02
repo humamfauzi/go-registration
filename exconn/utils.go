@@ -26,19 +26,39 @@ func ComposeConnectionFromEnv(connection interface{}, vendor string) string {
 		case "cassandra":
 			//  Because cassandra could work in cluster then the return
 			//  value is still array but will be parsed later to array of string
-			parsed := connection(map[string]interface{})
-			addressArray := parsed["address"].([]string)
+			parsed := connection.(map[string]interface{})
+			addressArray := parsed["address"].([]interface{})
 			stringArray := ""
 			for _, v := range addressArray {
-				stringArray += v ","
+				stringArray += v.(string) + ","
 			}
 			composed := stringArray[0 : len(stringArray)-1]
 			return composed
 		case "mongo":
 			composed := ""
 			return composed
+		default:
+			panic("FAILED TO PARSE EXTERNAL CONNECTION PROFILE")
 		}
 	default:
-		panic("FAILED TO PARSE DATABASE PROFILE")
+		panic("FAILED TO PARSE EXTERNAL CONNECTION PROFILE")
 	}
+}
+
+func GetAdditionalDbConnectionParams(connectionParams map[string]interface{}) string {
+	reservedKey := utils.StringArray([]string{"username", "password", "protocol", "address", "dbname"})
+	var connParams string
+	for key, value := range connectionParams {
+		if !reservedKey.Includes(key) {
+			if key == "parsetime" {
+				key = "parseTime"
+			}
+			connParams += key + "=" + value.(string) + "&"
+		}
+	}
+	if connParams != "" {
+		connParams = "?" + connParams
+		connParams = connParams[0 : len(connParams)-1]
+	}
+	return connParams
 }

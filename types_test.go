@@ -1,18 +1,34 @@
 package registration
 
 import (
+	"os"
 	"testing"
 
 	"github.com/humamfauzi/go-registration/exconn"
 	"github.com/humamfauzi/go-registration/utils"
+	"github.com/jinzhu/gorm"
 )
 
-const ()
+var (
+	conn *gorm.DB
+)
+
+func TestMain(m *testing.M) {
+	Setup()
+	code := m.Run()
+	Teardown()
+	os.Exit(code)
+}
+
+func Setup() {
+	conn = exconn.ConnectToMySQL()
+}
+
+func Teardown() {
+	conn.Close()
+}
 
 func TestAutoMigrateUsers(t *testing.T) {
-
-	conn := exconn.ConnectToDB()
-	defer conn.Close()
 	conn.Exec("DELETE FROM users;")
 	newUser := User{}
 
@@ -23,8 +39,6 @@ func TestAutoMigrateUsers(t *testing.T) {
 }
 
 func TestInsertUser(t *testing.T) {
-	conn := exconn.ConnectToDB()
-	defer conn.Close()
 	token := "asdf"
 	newUser := User{
 		Email:    "a@a.a",
@@ -39,8 +53,6 @@ func TestInsertUser(t *testing.T) {
 }
 
 func TestInsertUserBulk(t *testing.T) {
-	conn := exconn.ConnectToDB()
-	defer conn.Close()
 	millionUser := (make(Users, 10))
 	var user User
 	for i := 0; i < 10; i++ {
@@ -60,8 +72,6 @@ func TestInsertUserBulk(t *testing.T) {
 }
 
 func BenchmarkInsertUserMillion(b *testing.B) {
-	conn := exconn.ConnectToDB()
-	defer conn.Close()
 	for n := 0; n < b.N; n++ {
 		millionUser := (make(Users, 10000))
 		var user User

@@ -64,7 +64,7 @@ func GetEnv(key string) interface{} {
 	viper.AddConfigPath("./config/")
 	// viper.AddConfigPath("../config")
 	viper.SetConfigType("json")
-	viper.SetConfigFile("./config/" + env + ".config.json")
+	viper.SetConfigFile("../config/" + env + ".config.json")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
