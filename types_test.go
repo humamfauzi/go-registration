@@ -1,31 +1,43 @@
 package registration
 
 import (
+	"os"
 	"testing"
 
 	"github.com/humamfauzi/go-registration/utils"
-
-	"github.com/humamfauzi/go-registration/exconn"
+	"github.com/jinzhu/gorm"
 )
 
-const ()
+var (
+	conn *gorm.DB
+)
+
+func TestMain(m *testing.M) {
+	Setup()
+	code := m.Run()
+	Teardown()
+	os.Exit(code)
+}
+
+func Setup() {
+	InstantiateExternalConnection()
+}
+
+func Teardown() {
+	conn.Close()
+}
 
 func TestAutoMigrateUsers(t *testing.T) {
-
-	conn := exconn.ConnectToDB()
-	defer conn.Close()
 	conn.Exec("DELETE FROM users;")
 	newUser := User{}
 
-	newUser.AutoMigrate(conn)
+	newUser.AutoMigrate()
 	if !conn.HasTable(&newUser) {
 		t.Error("TABLE NOT WRITTEN")
 	}
 }
 
 func TestInsertUser(t *testing.T) {
-	conn := exconn.ConnectToDB()
-	defer conn.Close()
 	token := "asdf"
 	newUser := User{
 		Email:    "a@a.a",
@@ -33,15 +45,13 @@ func TestInsertUser(t *testing.T) {
 		Name:     "aaa",
 		Token:    &token,
 	}
-	dbUser := newUser.CreateUser(conn)
+	dbUser := newUser.CreateUser()
 	if dbUser.Id == "" {
 		t.Error("SHOULD HAVE A VALUE")
 	}
 }
 
 func TestInsertUserBulk(t *testing.T) {
-	conn := exconn.ConnectToDB()
-	defer conn.Close()
 	millionUser := (make(Users, 10))
 	var user User
 	for i := 0; i < 10; i++ {
@@ -54,17 +64,15 @@ func TestInsertUserBulk(t *testing.T) {
 		}
 		millionUser[i] = user
 	}
-	err := millionUser.BulkCreateUser(conn)
+	err := millionUser.BulkCreateUser()
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func BenchmarkInsertUserMillion(b *testing.B) {
-	conn := exconn.ConnectToDB()
-	defer conn.Close()
 	for n := 0; n < b.N; n++ {
-		millionUser := (make(Users, 100))
+		millionUser := (make(Users, 10000))
 		var user User
 		for i := 0; i < 100; i++ {
 			user = User{
@@ -75,6 +83,26 @@ func BenchmarkInsertUserMillion(b *testing.B) {
 			}
 			millionUser[i] = user
 		}
-		millionUser.BulkCreateUser(conn)
+		millionUser.BulkCreateUser()
+	}
+}
+
+func BenchmarkAppendString(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		var someString string
+		for i := 0; i < 100; i++ {
+			someString += "a"
+		}
+	}
+}
+
+func BenchmarkArrayString(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		someString := make([]rune, 100)
+		for i := 0; i < 100; i++ {
+			someString[i] = 'a'
+		}
+		_ = string(someString)
+
 	}
 }

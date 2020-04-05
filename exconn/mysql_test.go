@@ -29,5 +29,5 @@ func TestComposeConnectionFromEnv(t *testing.T) {
 }
 
 func TestDBConnection(t *testing.T) {
-	ConnectToDB()
+	ConnectToMySQL()
 }
