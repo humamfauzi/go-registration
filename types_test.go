@@ -4,7 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/humamfauzi/go-registration/exconn"
 	"github.com/humamfauzi/go-registration/utils"
 	"github.com/jinzhu/gorm"
 )
@@ -21,7 +20,7 @@ func TestMain(m *testing.M) {
 }
 
 func Setup() {
-	conn = exconn.ConnectToMySQL()
+	InstantiateExternalConnection()
 }
 
 func Teardown() {
@@ -32,7 +31,7 @@ func TestAutoMigrateUsers(t *testing.T) {
 	conn.Exec("DELETE FROM users;")
 	newUser := User{}
 
-	newUser.AutoMigrate(conn)
+	newUser.AutoMigrate()
 	if !conn.HasTable(&newUser) {
 		t.Error("TABLE NOT WRITTEN")
 	}
@@ -46,7 +45,7 @@ func TestInsertUser(t *testing.T) {
 		Name:     "aaa",
 		Token:    &token,
 	}
-	dbUser := newUser.CreateUser(conn)
+	dbUser := newUser.CreateUser()
 	if dbUser.Id == "" {
 		t.Error("SHOULD HAVE A VALUE")
 	}
@@ -65,7 +64,7 @@ func TestInsertUserBulk(t *testing.T) {
 		}
 		millionUser[i] = user
 	}
-	err := millionUser.BulkCreateUser(conn)
+	err := millionUser.BulkCreateUser()
 	if err != nil {
 		t.Error(err)
 	}
@@ -84,7 +83,7 @@ func BenchmarkInsertUserMillion(b *testing.B) {
 			}
 			millionUser[i] = user
 		}
-		millionUser.BulkCreateUser(conn)
+		millionUser.BulkCreateUser()
 	}
 }
 
