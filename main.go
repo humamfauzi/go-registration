@@ -71,6 +71,13 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(errorMap["ERR_EMAIL_ALREADY_TAKEN"]))
 		return
 	}
+	passwordHash, err := GeneratePasswordHash(newUser.Email, newUser.Password)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(errorMap["INTERNAL_SYS_ERR_001"]))
+		return
+	}
+	newUser.SetPassword(passwordHash)
 	newUser.CreateUser()
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"success": true}`))
@@ -97,7 +104,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`ERR_EMAIL_PASS_NOT_MATCH`))
 		return
 	}
-	if findUser.Password != loginUser.Password {
+	combined := loginUser.Email + ":" + loginUser.Password
+	ok := ValidatePasswordHash(combined, findUser.Password)
+	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`ERR_EMAIL_PASS_NOT_MATCH`))
 		return
