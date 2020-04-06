@@ -1,15 +1,11 @@
-package registration
+package main
 
 import (
 	"os"
 	"testing"
 
+	"github.com/humamfauzi/go-registration/exconn"
 	"github.com/humamfauzi/go-registration/utils"
-	"github.com/jinzhu/gorm"
-)
-
-var (
-	conn *gorm.DB
 )
 
 func TestMain(m *testing.M) {
@@ -20,19 +16,19 @@ func TestMain(m *testing.M) {
 }
 
 func Setup() {
-	InstantiateExternalConnection()
+	db = exconn.ConnectToMySQL()
 }
 
 func Teardown() {
-	conn.Close()
+	db.Close()
 }
 
 func TestAutoMigrateUsers(t *testing.T) {
-	conn.Exec("DELETE FROM users;")
+	db.Exec("DELETE FROM users;")
 	newUser := User{}
 
 	newUser.AutoMigrate()
-	if !conn.HasTable(&newUser) {
+	if !db.HasTable(&newUser) {
 		t.Error("TABLE NOT WRITTEN")
 	}
 }
