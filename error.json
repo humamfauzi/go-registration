@@ -1,4 +1,5 @@
 {
   "ERR_EMAIL_ALREADY_TAKEN": "Email already taken, please use another email",
-  "INTERNAL_SYS_ERR_001": "Registration error, please try again at several minutes later"
+  "INTERNAL_SYS_ERR_001": "Registration error, please try again at several minutes later",
+  "ERR_EMAIL_PASS_NOT_MATCH": "Email and password does not match"
 }
