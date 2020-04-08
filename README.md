@@ -1,39 +1,11 @@
 # go-registration
 Registration and User 
 
-File structure
-  main.go
-  router.go
-  notification.go
-  auth.go
-  datasource.go
-  datawrite.go
-  utils.go
-  config
-  |
-    live.config.json
-    staging.config.json
-    local.staging.json
-  external_connection
-    mysql.go
+A simple app that register users, here we implement external conection (mainly databases), an external package but still inside repo called exconn which stands for external connection and utils for a general function that could be reused.
 
-# Main
-Handle execution and serving http server
+The current main goal of this simple app is let user register with email and password, enable user to login/logout, and forgot
+password serquence. We impletement basic password hasing using bcrypt and web token using JWT. We also implement multiple 
+database connection, MySQL, Postgres, Mongo, and Cassandra.
 
-# Router
-List all possible routing and types that needed to perform operation
+More functions will be added such a function log -- any access of a function should be logged in cassandra. The objective is to gather data about input and output and execution time.
 
-# Notification
-All notification utilities such as sending email and push notification handled herre
-
-# Auth
-Handle all encryption, decryption, and validation
-
-# Datasource
-Handle data source connection; can be a database, external URL or any external source
-
-# Utils
-Handle all utilty accross all major function
-
-# Config
-Where all config stored; config included but not limited to credentials, external url and reuseable data

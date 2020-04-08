@@ -17,8 +17,7 @@ import (
 )
 
 var (
-	db       *gorm.DB
-	errorMap map[string]string
+	db *gorm.DB
 )
 
 func main() {

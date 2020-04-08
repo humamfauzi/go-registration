@@ -28,6 +28,9 @@ func ValidatePasswordHash(incoming, validator string) bool {
 }
 
 func GenerateWebToken(Id string) ([]byte, error) {
+	log := loggerFactory.CreateLog().SetFunctionName("GenerateWebToken").SetStartTime()
+	defer log.SetFinishTime().WriteAndDeleteLog()
+
 	token := jwt.New()
 	token.Set(`ID`, Id)
 	token.Set(`InternalToken`, utils.GenerateUUID("token", 4))
