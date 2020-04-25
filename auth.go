@@ -13,11 +13,12 @@ import (
 
 const (
 	ENCRYPTION_SALT         = "jh9J6nGvRyFznCjHJXgaLM"
+	PASSWORD_SALT           = "ByBDCG2sAYK1IMP"
 	JWT_SIGNATURE_ALGORITHM = jwa.HS256
 )
 
 func GeneratePasswordHash(email, password string) (string, error) {
-	combined := email + ":" + password
+	combined := email + ":" + password + ":" + PASSWORD_SALT
 	bytes, err := bcrypt.GenerateFromPassword([]byte(combined), bcrypt.DefaultCost)
 	return string(bytes), err
 }

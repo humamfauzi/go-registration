@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package proto;
+
+service operation {
+  rpc ObtainPass (Id) 
+    returns (Pass);
+
+  rpc Download (Pass) 
+    returns (stream File);
+
+  rpc Upload (stream File) 
+    returns (Status);
+
+  rpc MediaExchage (stream Media)
+    returns (stream Media);
+}
+
+message Id {
+  string UniqueId = 1;
+}
+
+message Pass {
+  string UniqueId = 1;
+  string UniquePass = 2;
+}
+
+message Point {
+  int32 lon = 1;
+  int32 lat = 2;
+}
+
+message File {
+  string UniqueId = 1;
+  Point RequestedPoint = 2;   
+}
+
+message Status {
+  Pass Requester = 1;
+  bool Status = 2;
+}
+
+message Media {
+  Pass Profile = 1;
+  string Text = 2;
+}
+
+
+
+
+

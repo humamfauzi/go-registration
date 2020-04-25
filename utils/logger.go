@@ -44,6 +44,9 @@ type Logger struct {
 	FunctionName string
 }
 
+// Implement with channel and go func so it would not
+// add more run time in a same thread
+
 func (l *Logger) ToExternalFormat() []string {
 	startAt, _ := l.StartAt.MarshalText()
 	finishtAt, _ := l.StartAt.MarshalText()

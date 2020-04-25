@@ -2,11 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"sync"
 	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/humamfauzi/go-registration/utils"
 
@@ -14,6 +19,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/gorilla/mux"
+	pb "github.com/humamfauzi/go-registration/proto"
 )
 
 var (
@@ -42,6 +48,35 @@ func main() {
 	}
 	log.Print("STARTING SERVER")
 	log.Fatal(srv.ListenAndServe())
+
+}
+
+func InitRPCServer() {
+	flag.Parse()
+	listen, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
+	if err != nil {
+		log.Fatalf("Failed to Listen: %v", err)
+	}
+	var opts []grpc.ServerOption
+	grpcServer := grpc.NewServer(opts...)
+
+	pb.RegisterRouteGuideServer(grpcServer, newServer())
+	grpcServer.Serve(listen)
+
+}
+
+type routeGuideServer struct {
+	pb.UnimplementedRouteGuideServer
+	savedFeatures []*pb.Feature // read-only after initialized
+
+	mu         sync.Mutex // protects routeNotes
+	routeNotes map[string][]*pb.RouteNote
+}
+
+func newServer() *routeGuideServer {
+	s := &routeGuideServer{routeNotes: make(map[string][]*pb.RouteNote)}
+	s.loadFeatures(*jsonDBFile)
+	return s
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -51,9 +86,20 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	opReply := OperationReply{
+		"OP_USER_REGISTRATION",
+		true,
+	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code: "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer"
+		}
+		opReply.Flip()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
 		return
 	}
 
@@ -68,25 +114,53 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if findUser.Id != "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(errorMap["ERR_EMAIL_ALREADY_TAKEN"]))
+		errReply := ErrorReply{
+			Code: "ERR_EMAIL_ALREADY_TAKEN",
+			Message: "Email already taken please use another email"
+		}
+		opReply.Flip()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
 		return
 	}
 	passwordHash, err := GeneratePasswordHash(newUser.Email, newUser.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errorMap["INTERNAL_SYS_ERR_001"]))
+		errReply := ErrorReply{
+			Code: "ERR_INTERNAL_SERVER_ERROR",
+			Message: "There is something wrong, please try some moment"
+		}
+		opReply.Flip()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
 		return
 	}
 	newUser.SetPassword(passwordHash)
 	newUser.CreateUser()
+
+	
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"success": true}`))
+	errReply := ErrorReply{}
+	result, _ := CreateReply(opReply, errReply, []byte{})
+	w.Write(result)
 	return
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	opReply := OperationReply{
+		"OP_USER_LOGIN",
+		true,
+	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code: "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer"
+		}
+		opReply.Flip()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
 		return
 	}
 
@@ -94,23 +168,45 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &loginUser)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code: "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer"
+		}
+		opReply.Flip()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
 		return
 	}
 	var findUser User
 	err = db.Debug().Where("email = ?", loginUser.Email).Find(&findUser).Error
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`ERR_EMAIL_PASS_NOT_MATCH`))
+		errReply := ErrorReply{
+			Code: "ERR_EMAIL_PASS_NOT_MATCH",
+			Message: "Combination of Email and Password not found"
+		}
+		opReply.Flip()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
 		return
 	}
-	combined := loginUser.Email + ":" + loginUser.Password
+	combined := loginUser.Email + ":" + loginUser.Password + ":" + PASSWORD_SALT
 	ok := ValidatePasswordHash(combined, findUser.Password)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`ERR_EMAIL_PASS_NOT_MATCH`))
+		errReply := ErrorReply{
+			Code: "ERR_EMAIL_PASS_NOT_MATCH",
+			Message: "Combination of Email and Password not found"
+		}
+		opReply.Flip()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+	errReply := ErrorReply{}
+	result, _ := CreateReply(opReply, errReply, []byte{})
+	w.Write(result)
 	return
 }
 
