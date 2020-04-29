@@ -178,7 +178,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tokenStruct := struct {
-		Token []byte
+		Token []byte `json:"token"`
 	}{payload}
 
 	w.WriteHeader(http.StatusOK)
