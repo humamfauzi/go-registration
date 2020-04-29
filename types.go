@@ -82,7 +82,7 @@ func (u User) UpdateUser(newUserProfile User) error {
 }
 
 func (u *User) GetUser(userId string) {
-	db.First(u, userId)
+	db.Where("id = ?", userId).First(u)
 	u.Password = REDACTED
 }
 

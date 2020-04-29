@@ -106,4 +106,49 @@ func TestLoginHandler(t *testing.T) {
 
 	payload := someBody.Body.(map[string]interface{})
 	operationsAssert.Contains(payload, "token")
+	return
+}
+
+func TestLogoutHandler(t *testing.T) {
+	db = exconn.ConnectToMySQL()
+	defer db.Close()
+
+	db.AutoMigrate(&User{})
+	db.Delete(&User{})
+
+	// Creating user
+	exampleJson := `{"email": "new@user.com", "password": "Pass123!", "name":"user_logout_test"}`
+	reqRegistration := httptest.NewRequest("POST", "http://example.com/users/register", bytes.NewReader([]byte(exampleJson)))
+	reqRegistration.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	RegisterHandler(w, reqRegistration)
+
+	// login user
+	exampleJson = `{"email": "new@user.com", "password": "Pass123!"}`
+	reqLogin := httptest.NewRequest("POST", "http://example.com/users/login", bytes.NewReader([]byte(exampleJson)))
+	reqLogin.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	LoginHandler(w, reqLogin)
+
+	body, _ := ioutil.ReadAll(w.Result().Body)
+	var someBody Reply
+
+	json.Unmarshal(body, &someBody)
+	payload := someBody.Body.(map[string]interface{})
+	payloadToken := payload["token"].(string)
+
+	reqLogout := httptest.NewRequest("POST", "http://example.com/users/logout", bytes.NewReader([]byte(exampleJson)))
+	reqLogout.Header.Set("Content-Type", "application/json")
+	reqLogout.Header.Set("Authorization", "Bearer "+payloadToken)
+	w = httptest.NewRecorder()
+	LogoutHandler(w, reqLogout)
+
+	body, _ = ioutil.ReadAll(w.Result().Body)
+	json.Unmarshal(body, &someBody)
+	operationStatus := someBody.Operation
+	t.Log(someBody)
+	operationsAssert := assert.New(t)
+	operationsAssert.Equal(operationStatus.Name, "OP_USER_LOGOUT", "should be the same")
+	operationsAssert.Equal(operationStatus.Success, true, "should be the same")
+
 }

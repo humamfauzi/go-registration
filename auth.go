@@ -85,7 +85,7 @@ func GetWebToken(r *http.Request) (User, error) {
 	userToken, _ := token.Get("InternalToken")
 	user.GetUser(userId.(string))
 
-	if user.Token != userToken {
+	if *user.Token != userToken {
 		err = errors.New("ERR_WRONG_AUTHORIZATION")
 		return User{}, err
 	}
