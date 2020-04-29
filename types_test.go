@@ -17,6 +17,7 @@ func TestMain(m *testing.M) {
 
 func Setup() {
 	db = exconn.ConnectToMySQL()
+	db.AutoMigrate(&User{})
 }
 
 func Teardown() {

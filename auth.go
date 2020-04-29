@@ -31,8 +31,8 @@ func ValidatePasswordHash(incoming, validator string) bool {
 }
 
 func GenerateWebToken(id, token string) ([]byte, error) {
-	log := loggerFactory.CreateLog().SetFunctionName("GenerateWebToken").SetStartTime()
-	defer log.SetFinishTime().WriteAndDeleteLog()
+	// log := loggerFactory.CreateLog().SetFunctionName("GenerateWebToken").SetStartTime()
+	// defer log.SetFinishTime().WriteAndDeleteLog()
 
 	tokenJwt := jwt.New()
 	tokenJwt.Set(`ID`, id)

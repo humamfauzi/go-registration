@@ -16,7 +16,7 @@ const (
 
 type User struct {
 	Id        string  `gorm:"type:varchar(100);unique_index;primary_key" json:"id"`
-	Email     string  `gorm:"type:varchar(255)" json:"phone,omitempty"`
+	Email     string  `gorm:"type:varchar(255)" json:"email,omitempty"`
 	Password  string  `gorm:"type:varchar(255)" json:"password,omitempty"`
 	Name      string  `gorm:"type:varchar(255)" json:"name,omitempty"`
 	Phone     string  `gorm:"type:varchar(255)" json:"phone,omitempty"`
