@@ -1,21 +1,20 @@
 package main
 
+import "encoding/json"
+
 type OperationReply struct {
 	Name    string
 	Success bool
 }
 
-func(or *OperationReply) Flip() {
-	if or.Success {
-		or.Success = false
-	} else {
-		or.Success = true
-	}
+func (or *OperationReply) SetFail() {
+	or.Success = false
 }
+
 type Reply struct {
-	Operation OperationReply
-	Error     ErrorReply
-	Body      interface{}
+	Operation OperationReply `json:"operation"`
+	Error     ErrorReply     `json:"error"`
+	Body      interface{}    `json:"body,omitempty"`
 }
 
 type ErrorReply struct {
@@ -24,12 +23,11 @@ type ErrorReply struct {
 	Meta    string `json:"meta,omitempty"`
 }
 
-
 func CreateReply(opProfile OperationReply, erProfile ErrorReply, body interface{}) ([]byte, error) {
 	newReply := Reply{
 		Operation: opProfile,
-		Error: erProfile,
-		Body: body
+		Error:     erProfile,
+		Body:      body,
 	}
 	reply, err := json.Marshal(newReply)
 	if err != nil {

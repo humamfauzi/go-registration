@@ -21,12 +21,12 @@ func InstantiateExternalConnection() {
 	logStore = exconn.InstantiateCassandraLog()
 	documentDb = exconn.ConnectToMongo()
 	errorMap = utils.InitError("./error.json")
-	loggerFactory = InstantiateLoggerFactory(logStore)
+	loggerFactory = InstantiateLoggerFactory(&logStore)
 }
 
 func InstantiateLoggerFactory(logStore utils.LogStore) utils.LoggerFactory {
 	return utils.LoggerFactory{
-		LogList:    make(map[string]*Logger),
+		LogList:    make(map[string]*utils.Logger),
 		LogAddress: logStore,
 	}
 }

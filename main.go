@@ -2,28 +2,18 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
-	"sync"
 	"time"
-
-	"google.golang.org/grpc"
 
 	"github.com/humamfauzi/go-registration/utils"
 
 	"github.com/humamfauzi/go-registration/exconn"
-	"github.com/jinzhu/gorm"
 
 	"github.com/gorilla/mux"
-	pb "github.com/humamfauzi/go-registration/proto"
-)
-
-var (
-	db *gorm.DB
+	// pb "github.com/humamfauzi/go-registration/protobuf"
 )
 
 func main() {
@@ -51,33 +41,33 @@ func main() {
 
 }
 
-func InitRPCServer() {
-	flag.Parse()
-	listen, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
-	if err != nil {
-		log.Fatalf("Failed to Listen: %v", err)
-	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
+// func InitRPCServer() {
+// 	flag.Parse()
+// 	listen, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
+// 	if err != nil {
+// 		log.Fatalf("Failed to Listen: %v", err)
+// 	}
+// 	var opts []grpc.ServerOption
+// 	grpcServer := grpc.NewServer(opts...)
 
-	pb.RegisterRouteGuideServer(grpcServer, newServer())
-	grpcServer.Serve(listen)
+// 	pb.RegisterRouteGuideServer(grpcServer, newServer())
+// 	grpcServer.Serve(listen)
 
-}
+// }
 
-type routeGuideServer struct {
-	pb.UnimplementedRouteGuideServer
-	savedFeatures []*pb.Feature // read-only after initialized
+// type routeGuideServer struct {
+// 	pb.UnimplementedRouteGuideServer
+// 	savedFeatures []*pb.Feature // read-only after initialized
 
-	mu         sync.Mutex // protects routeNotes
-	routeNotes map[string][]*pb.RouteNote
-}
+// 	mu         sync.Mutex // protects routeNotes
+// 	routeNotes map[string][]*pb.RouteNote
+// }
 
-func newServer() *routeGuideServer {
-	s := &routeGuideServer{routeNotes: make(map[string][]*pb.RouteNote)}
-	s.loadFeatures(*jsonDBFile)
-	return s
-}
+// func newServer() *routeGuideServer {
+// 	s := &routeGuideServer{routeNotes: make(map[string][]*pb.RouteNote)}
+// 	s.loadFeatures(*jsonDBFile)
+// 	return s
+// }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -94,10 +84,10 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errReply := ErrorReply{
-			Code: "ERR_CANNOT_READ_REQUEST",
-			Message: "Cannot read incoming buffer"
+			Code:    "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer",
 		}
-		opReply.Flip()
+		opReply.SetFail()
 		result, _ := CreateReply(opReply, errReply, []byte{})
 		w.Write(result)
 		return
@@ -115,10 +105,10 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(errorMap["ERR_EMAIL_ALREADY_TAKEN"]))
 		errReply := ErrorReply{
-			Code: "ERR_EMAIL_ALREADY_TAKEN",
-			Message: "Email already taken please use another email"
+			Code:    "ERR_EMAIL_ALREADY_TAKEN",
+			Message: "Email already taken please use another email",
 		}
-		opReply.Flip()
+		opReply.SetFail()
 		result, _ := CreateReply(opReply, errReply, []byte{})
 		w.Write(result)
 		return
@@ -127,10 +117,10 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errReply := ErrorReply{
-			Code: "ERR_INTERNAL_SERVER_ERROR",
-			Message: "There is something wrong, please try some moment"
+			Code:    "ERR_INTERNAL_SERVER_ERROR",
+			Message: "There is something wrong, please try some moment",
 		}
-		opReply.Flip()
+		opReply.SetFail()
 		result, _ := CreateReply(opReply, errReply, []byte{})
 		w.Write(result)
 		return
@@ -138,7 +128,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	newUser.SetPassword(passwordHash)
 	newUser.CreateUser()
 
-	
 	w.WriteHeader(http.StatusOK)
 	errReply := ErrorReply{}
 	result, _ := CreateReply(opReply, errReply, []byte{})
@@ -155,10 +144,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errReply := ErrorReply{
-			Code: "ERR_CANNOT_READ_REQUEST",
-			Message: "Cannot read incoming buffer"
+			Code:    "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer",
 		}
-		opReply.Flip()
+		opReply.SetFail()
 		result, _ := CreateReply(opReply, errReply, []byte{})
 		w.Write(result)
 		return
@@ -169,23 +158,23 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errReply := ErrorReply{
-			Code: "ERR_CANNOT_READ_REQUEST",
-			Message: "Cannot read incoming buffer"
+			Code:    "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer",
 		}
-		opReply.Flip()
+		opReply.SetFail()
 		result, _ := CreateReply(opReply, errReply, []byte{})
 		w.Write(result)
 		return
 	}
 	var findUser User
-	err = db.Debug().Where("email = ?", loginUser.Email).Find(&findUser).Error
+	err = findUser.FindUserLoginByEmail(loginUser.Email)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errReply := ErrorReply{
-			Code: "ERR_EMAIL_PASS_NOT_MATCH",
-			Message: "Combination of Email and Password not found"
+			Code:    "ERR_EMAIL_PASS_NOT_MATCH",
+			Message: "Combination of Email and Password not found",
 		}
-		opReply.Flip()
+		opReply.SetFail()
 		result, _ := CreateReply(opReply, errReply, []byte{})
 		w.Write(result)
 		return
@@ -195,23 +184,68 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		errReply := ErrorReply{
-			Code: "ERR_EMAIL_PASS_NOT_MATCH",
-			Message: "Combination of Email and Password not found"
+			Code:    "ERR_EMAIL_PASS_NOT_MATCH",
+			Message: "Combination of Email and Password not found",
 		}
-		opReply.Flip()
+		opReply.SetFail()
 		result, _ := CreateReply(opReply, errReply, []byte{})
 		w.Write(result)
 		return
 	}
+	token := utils.GenerateUUID("token", 4)
+	findUser.UpdateUser(User{Token: &token})
+
+	payload, err := GenerateWebToken(findUser.Id, token)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_INTERNAL_SERVER_ERROR",
+			Message: "There is something wrong, please try some moment",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	tokenStruct := struct {
+		Token []byte
+	}{payload}
+
 	w.WriteHeader(http.StatusOK)
 	errReply := ErrorReply{}
-	result, _ := CreateReply(opReply, errReply, []byte{})
+
+	// Token inside result come in form of base64, any incoming token should converter
+	// from base64 to normal byte befire getting parsed
+	result, _ := CreateReply(opReply, errReply, tokenStruct)
 	w.Write(result)
 	return
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusServiceUnavailable)
+	opReply := OperationReply{
+		"OP_USER_LOGOUT",
+		true,
+	}
+	user, err := GetWebToken(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_UNAUTHORIZED_OPERATION",
+			Message: "User unable do this operation",
+			Meta:    err.Error(),
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+	var token *string
+	user.UpdateUser(User{Token: token})
+	errReply := ErrorReply{}
+
+	result, _ := CreateReply(opReply, errReply, []byte{})
+	w.Write(result)
 	return
 }
 
@@ -226,6 +260,57 @@ func RecoveryPasswordHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusServiceUnavailable)
+	opReply := OperationReply{
+		"OP_USER_UPDATE",
+		true,
+	}
+	user, err := GetWebToken(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_UNAUTHORIZED_OPERATION",
+			Message: "User unable do this operation",
+			Meta:    err.Error(),
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_UNREADBLE_PAYLOAD",
+			Message: "Cannot parse incoming payload",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	var userUpdate User
+	err = json.Unmarshal(body, userUpdate)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_UNREADBLE_PAYLOAD",
+			Message: "Cannot parse incoming payload",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	sanitizedUser := User{
+		Name:  userUpdate.Name,
+		Phone: userUpdate.Phone,
+	}
+	user.UpdateUser(sanitizedUser)
+	errReply := ErrorReply{}
+	result, _ := CreateReply(opReply, errReply, []byte{})
+	w.Write(result)
 	return
 }

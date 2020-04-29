@@ -16,8 +16,8 @@ type CassandraLog struct {
 	LogQuery string
 }
 
-func (cl *CassandraLog) SendLog(input []string) {
-	return
+func (cl *CassandraLog) SendLog(input []string) bool {
+	return false
 }
 
 func ConnectToCassandra() *gocql.Session {

@@ -10,15 +10,17 @@ import (
 )
 
 const (
-	module = "USERS"
+	module   = "USERS"
+	REDACTED = "--redacted--"
 )
 
 type User struct {
 	Id        string  `gorm:"type:varchar(100);unique_index;primary_key" json:"id"`
-	Email     string  `gorm:"type:varchar(255)"`
-	Password  string  `gorm:"type:varchar(255)"`
-	Name      string  `gorm:"type:varchar(255)`
-	Token     *string `gorm:"type:varchar(255)`
+	Email     string  `gorm:"type:varchar(255)" json:"phone,omitempty"`
+	Password  string  `gorm:"type:varchar(255)" json:"password,omitempty"`
+	Name      string  `gorm:"type:varchar(255)" json:"name,omitempty"`
+	Phone     string  `gorm:"type:varchar(255)" json:"phone,omitempty"`
+	Token     *string `gorm:"type:varchar(255)" json:"token,omitempty"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time
@@ -81,10 +83,22 @@ func (u User) UpdateUser(newUserProfile User) error {
 
 func (u *User) GetUser(userId string) {
 	db.First(u, userId)
+	u.Password = REDACTED
 }
 
 func (u *User) FindUser() {
 	db.Find(u)
+	u.Password = REDACTED
+}
+
+func (u *User) FindUserLoginByEmail(email string) error {
+	if email == "" {
+		return errors.New("Email cannot be empty")
+	}
+	if err := db.Debug().Where("email = ?", email).Find(u).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 type Users []User
@@ -127,6 +141,7 @@ func (u Users) BulkDeleteUser() error {
 func (u Users) BulkFindUser() error {
 	for index := 0; index < len(u); index++ {
 		db.Find(&u[index])
+		u[index].Password = REDACTED
 	}
 	return nil
 }

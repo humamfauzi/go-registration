@@ -18,7 +18,7 @@ option java_multiple_files = true;
 option java_package = "io.grpc.examples.routeguide";
 option java_outer_classname = "RouteGuideProto";
 
-package routeguide;
+package proto;
 
 // Interface exported by the server.
 service RouteGuide {
