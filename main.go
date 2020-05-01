@@ -11,13 +11,9 @@ import (
 	"github.com/humamfauzi/go-registration/utils"
 
 	"github.com/humamfauzi/go-registration/exconn"
-	"github.com/jinzhu/gorm"
 
 	"github.com/gorilla/mux"
-)
-
-var (
-	db *gorm.DB
+	// pb "github.com/humamfauzi/go-registration/protobuf"
 )
 
 func main() {
@@ -27,11 +23,11 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler).Methods(http.MethodGet)
-	r.HandleFunc("/register", RegisterHandler).Methods(http.MethodPost)
-	r.HandleFunc("/login", LoginHandler).Methods(http.MethodPost)
-	r.HandleFunc("/logout", LogoutHandler).Methods(http.MethodPost)
-	r.HandleFunc("/forget_password", ForgotPasswordHandler).Methods(http.MethodPost)
-	r.HandleFunc("/recovery_password", RecoveryPasswordHandler).Methods(http.MethodGet)
+	r.HandleFunc("/users/register", RegisterHandler).Methods(http.MethodPost)
+	r.HandleFunc("/users/login", LoginHandler).Methods(http.MethodPost)
+	r.HandleFunc("/users/logout", LogoutHandler).Methods(http.MethodPost)
+	r.HandleFunc("/users/forget_password", ForgotPasswordHandler).Methods(http.MethodPost)
+	r.HandleFunc("/users/recovery_password", RecoveryPasswordHandler).Methods(http.MethodGet)
 	r.HandleFunc("/users/update", UpdateUserHandler).Methods(http.MethodPut)
 
 	srv := &http.Server{
@@ -42,80 +38,40 @@ func main() {
 	}
 	log.Print("STARTING SERVER")
 	log.Fatal(srv.ListenAndServe())
+
 }
+
+// func InitRPCServer() {
+// 	flag.Parse()
+// 	listen, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
+// 	if err != nil {
+// 		log.Fatalf("Failed to Listen: %v", err)
+// 	}
+// 	var opts []grpc.ServerOption
+// 	grpcServer := grpc.NewServer(opts...)
+
+// 	pb.RegisterRouteGuideServer(grpcServer, newServer())
+// 	grpcServer.Serve(listen)
+
+// }
+
+// type routeGuideServer struct {
+// 	pb.UnimplementedRouteGuideServer
+// 	savedFeatures []*pb.Feature // read-only after initialized
+
+// 	mu         sync.Mutex // protects routeNotes
+// 	routeNotes map[string][]*pb.RouteNote
+// }
+
+// func newServer() *routeGuideServer {
+// 	s := &routeGuideServer{routeNotes: make(map[string][]*pb.RouteNote)}
+// 	s.loadFeatures(*jsonDBFile)
+// 	return s
+// }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Hello world")
-	return
-}
-
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	var newUser User
-	err = json.Unmarshal(body, &newUser)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	var findUser User
-	db.Debug().Where("email = ?", newUser.Email).Find(&findUser)
-	if findUser.Id != "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errorMap["ERR_EMAIL_ALREADY_TAKEN"]))
-		return
-	}
-	passwordHash, err := GeneratePasswordHash(newUser.Email, newUser.Password)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errorMap["INTERNAL_SYS_ERR_001"]))
-		return
-	}
-	newUser.SetPassword(passwordHash)
-	newUser.CreateUser()
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"success": true}`))
-	return
-}
-
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	var loginUser User
-	err = json.Unmarshal(body, &loginUser)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	var findUser User
-	err = db.Debug().Where("email = ?", loginUser.Email).Find(&findUser).Error
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`ERR_EMAIL_PASS_NOT_MATCH`))
-		return
-	}
-	combined := loginUser.Email + ":" + loginUser.Password
-	ok := ValidatePasswordHash(combined, findUser.Password)
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`ERR_EMAIL_PASS_NOT_MATCH`))
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	return
-}
-
-func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusServiceUnavailable)
 	return
 }
 
@@ -130,6 +86,57 @@ func RecoveryPasswordHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusServiceUnavailable)
+	opReply := OperationReply{
+		"OP_USER_UPDATE",
+		true,
+	}
+	user, err := GetWebToken(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_UNAUTHORIZED_OPERATION",
+			Message: "User unable do this operation",
+			Meta:    err.Error(),
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_UNREADBLE_PAYLOAD",
+			Message: "Cannot parse incoming payload",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	var userUpdate User
+	err = json.Unmarshal(body, userUpdate)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_UNREADBLE_PAYLOAD",
+			Message: "Cannot parse incoming payload",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	sanitizedUser := User{
+		Name:  userUpdate.Name,
+		Phone: userUpdate.Phone,
+	}
+	user.UpdateUser(sanitizedUser)
+	errReply := ErrorReply{}
+	result, _ := CreateReply(opReply, errReply, []byte{})
+	w.Write(result)
 	return
 }

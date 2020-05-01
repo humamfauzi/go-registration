@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 
-	"github.com/gocql/gocql"
 	"github.com/humamfauzi/go-registration/exconn"
 	"github.com/humamfauzi/go-registration/utils"
 	"github.com/jinzhu/gorm"
@@ -11,7 +10,7 @@ import (
 
 var (
 	db            *gorm.DB
-	logStore      *gocql.Session
+	logStore      exconn.CassandraLog
 	documentDb    context.Context
 	errorMap      map[string]string
 	loggerFactory utils.LoggerFactory
@@ -19,15 +18,15 @@ var (
 
 func InstantiateExternalConnection() {
 	db = exconn.ConnectToMySQL()
-	logStore = exconn.ConnectToCassandra()
+	logStore = exconn.InstantiateCassandraLog()
 	documentDb = exconn.ConnectToMongo()
 	errorMap = utils.InitError("./error.json")
-	loggerFactory = InstantiateLoggerFactory(logStore)
+	loggerFactory = InstantiateLoggerFactory(&logStore)
 }
 
 func InstantiateLoggerFactory(logStore utils.LogStore) utils.LoggerFactory {
 	return utils.LoggerFactory{
-		LogList:    make(map[string]*Logger),
+		LogList:    make(map[string]*utils.Logger),
 		LogAddress: logStore,
 	}
 }

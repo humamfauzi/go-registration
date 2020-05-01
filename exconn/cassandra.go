@@ -7,6 +7,19 @@ import (
 	"github.com/humamfauzi/go-registration/utils"
 )
 
+const (
+	LOG_QUERY = "INSERT INTO"
+)
+
+type CassandraLog struct {
+	Session  *gocql.Session
+	LogQuery string
+}
+
+func (cl *CassandraLog) SendLog(input []string) bool {
+	return false
+}
+
 func ConnectToCassandra() *gocql.Session {
 	cassandraEnv := utils.GetEnv("database.cassandra")
 	connProfile := ComposeConnectionFromEnv(cassandraEnv, "cassandra")
@@ -17,4 +30,12 @@ func ConnectToCassandra() *gocql.Session {
 
 	session, _ := cluster.CreateSession()
 	return session
+}
+
+func InstantiateCassandraLog() CassandraLog {
+	session := ConnectToCassandra()
+	return CassandraLog{
+		Session:  session,
+		LogQuery: LOG_QUERY,
+	}
 }
