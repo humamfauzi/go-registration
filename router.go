@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+<<<<<<< HEAD
+=======
+	"time"
+>>>>>>> fix conflict and apply stash
 
 	"github.com/humamfauzi/go-registration/utils"
 )
@@ -162,9 +166,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := utils.GenerateUUID("token", 4)
-	findUser.UpdateUser(User{Token: &token})
+	findUser.UpdateUser(User{AccessToken: &token})
 
-	payload, err := GenerateWebToken(findUser.Id, token)
+	payload, err := GenerateWebToken(findUser.Id, token, PURP_ACCESS_TOKEN)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errReply := ErrorReply{
@@ -210,10 +214,155 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var token *string
-	user.UpdateUser(User{Token: token})
+	user.UpdateUser(User{AccessToken: token})
 	errReply := ErrorReply{}
 
 	result, _ := CreateReply(opReply, errReply, []byte{})
 	w.Write(result)
 	return
+}
+
+func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	opReply := OperationReply{
+		"OP_USER_FORGOT_PASS_REQUEST",
+		true,
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	var loginUser User
+	err = json.Unmarshal(body, &loginUser)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+	var findUser User
+	err = findUser.FindUserLoginByEmail(loginUser.Email)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_EMAIL_NOT_REGISTERED",
+			Message: "Email not found",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+	passToken := utils.GenerateUUID("token", 4)
+	findUser.UpdateUser(User{PassToken: &passToken})
+
+	forgotEmailMeta := make(map[string]interface{})
+	forgotEmailMeta["token"] = passToken
+	forgotEmailMeta["time"] = time.Now().Format("2020-11-12T09:00:33")
+	forgotEmailMeta["name"] = findUser.Name
+
+	forgotEmailNotif := Notification{
+		Code:    "NOTIF_FORGOT_PASSWORD_EMAIL",
+		Message: "A request to renew password",
+		Meta:    forgotEmailMeta,
+	}
+	err = NotificationRouter(forgotEmailNotif)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		errReply := ErrorReply{
+			Code:    "ERR_INTERNAL_SERVER_ERROR",
+			Message: "There is something wrong, please try some moment",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	errReply := ErrorReply{}
+	result, _ := CreateReply(opReply, errReply, []byte{})
+	w.Write(result)
+	w.WriteHeader(http.StatusOK)
+	return
+}
+
+func RecoveryPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	opReply := OperationReply{
+		"OP_USER_RECOVERY_PASS_REQUEST",
+		true,
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+	tokenPassword := struct {
+		Token    string
+		Password string
+	}{}
+
+	err = json.Unmarshal(body, &tokenPassword)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_CANNOT_READ_REQUEST",
+			Message: "Cannot read incoming buffer",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	user, err := VerifyToken(tokenPassword.Token, PURP_FORGOT_PASSWORD)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_TOKEN_NOT_FOUND",
+			Message: "Cannot find request token",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+	passwordHash, err := GeneratePasswordHash(user.Email, tokenPassword.Password)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errReply := ErrorReply{
+			Code:    "ERR_INTERNAL_SERVER_ERROR",
+			Message: "There is something wrong, please try some moment",
+		}
+		opReply.SetFail()
+		result, _ := CreateReply(opReply, errReply, []byte{})
+		w.Write(result)
+		return
+	}
+
+	user.UpdateUser(User{Password: passwordHash})
+	errReply := ErrorReply{}
+	result, _ := CreateReply(opReply, errReply, []byte{})
+	w.Write(result)
+	w.WriteHeader(http.StatusOK)
+
 }
