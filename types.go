@@ -15,15 +15,16 @@ const (
 )
 
 type User struct {
-	Id        string  `gorm:"type:varchar(100);unique_index;primary_key" json:"id"`
-	Email     string  `gorm:"type:varchar(255)" json:"email,omitempty"`
-	Password  string  `gorm:"type:varchar(255)" json:"password,omitempty"`
-	Name      string  `gorm:"type:varchar(255)" json:"name,omitempty"`
-	Phone     string  `gorm:"type:varchar(255)" json:"phone,omitempty"`
-	Token     *string `gorm:"type:varchar(255)" json:"token,omitempty"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
+	Id          string  `gorm:"type:varchar(100);unique_index;primary_key" json:"id"`
+	Email       string  `gorm:"type:varchar(255)" json:"email,omitempty"`
+	Password    string  `gorm:"type:varchar(255)" json:"password,omitempty"`
+	Name        string  `gorm:"type:varchar(255)" json:"name,omitempty"`
+	Phone       string  `gorm:"type:varchar(255)" json:"phone,omitempty"`
+	AccessToken *string `gorm:"type:varchar(255)" json:"token,omitempty"`
+	PassToken   *string `gorm:"type:varchar(255)" json:"pass_token,omitempty"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   *time.Time
 }
 
 func (u *User) SetEmail(email string) {
@@ -32,10 +33,6 @@ func (u *User) SetEmail(email string) {
 
 func (u *User) SetPassword(password string) {
 	u.Password = password
-}
-
-func (u *User) SetToken(token string) {
-	u.Token = &token
 }
 
 func (u *User) SetName(name string) {

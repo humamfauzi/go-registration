@@ -75,16 +75,6 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusServiceUnavailable)
-	return
-}
-
-func RecoveryPasswordHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusServiceUnavailable)
-	return
-}
-
 func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	opReply := OperationReply{
 		"OP_USER_UPDATE",
