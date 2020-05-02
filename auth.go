@@ -17,6 +17,8 @@ const (
 	ENCRYPTION_SALT         = "jh9J6nGvRyFznCjHJXgaLM"
 	PASSWORD_SALT           = "ByBDCG2sAYK1IMP"
 	JWT_SIGNATURE_ALGORITHM = jwa.HS256
+	PURP_ACCESS_TOKEN       = "PURP_ACCESS_TOKEN"
+	PURP_FORGOT_PASSWORD    = "PURP_FORGOT_PASSWORD"
 )
 
 func GeneratePasswordHash(email, password string) (string, error) {
@@ -30,20 +32,20 @@ func ValidatePasswordHash(incoming, validator string) bool {
 	return err == nil
 }
 
-func GenerateWebToken(id, token string) ([]byte, error) {
-	log := loggerFactory.CreateLog().SetFunctionName("GenerateWebToken").SetStartTime()
-	defer log.SetFinishTime().WriteAndDeleteLog()
+func GenerateWebToken(id, token, purpose string) ([]byte, error) {
+	// log := loggerFactory.CreateLog().SetFunctionName("GenerateWebToken").SetStartTime()
+	// defer log.SetFinishTime().WriteAndDeleteLog()
 
 	tokenJwt := jwt.New()
 	tokenJwt.Set(`ID`, id)
 	tokenJwt.Set(`InternalToken`, token)
+	tokenJwt.Set(`Purpose`, purpose)
 	payload, err := tokenJwt.Sign(JWT_SIGNATURE_ALGORITHM, []byte(ENCRYPTION_SALT))
 	if err != nil {
 		return []byte{}, err
 	}
 	return payload, nil
 }
-
 func ValidateWebToken(webToken []byte) bool {
 	options := jwt.WithVerify(JWT_SIGNATURE_ALGORITHM, []byte(ENCRYPTION_SALT))
 	_, err := jwt.Parse(bytes.NewReader(webToken), options)
@@ -57,7 +59,6 @@ func ValidateWebToken(webToken []byte) bool {
 // Get webtoken from a http request, will return with userprofile and error
 func GetWebToken(r *http.Request) (User, error) {
 	var err error
-	var user User
 	auth, ok := r.Header["Authorization"]
 	if !ok {
 		err = errors.New("ERR_CANNOT_PARSE_HEADER")
@@ -69,7 +70,11 @@ func GetWebToken(r *http.Request) (User, error) {
 		err = errors.New("ERR_WRONG_AUTHORIZATION")
 		return User{}, err
 	}
-	convertedToken, err := base64.StdEncoding.DecodeString(splitAuth[1])
+	return VerifyToken(splitAuth[1], PURP_ACCESS_TOKEN)
+}
+
+func VerifyToken(incomingToken, tokenPurpose string) (User, error) {
+	convertedToken, err := base64.StdEncoding.DecodeString(incomingToken)
 	if err != nil {
 		err = errors.New("ERR_WRONG_AUTHORIZATION")
 		return User{}, err
@@ -83,12 +88,21 @@ func GetWebToken(r *http.Request) (User, error) {
 	}
 	userId, _ := token.Get("ID")
 	userToken, _ := token.Get("InternalToken")
+
+	var user User
 	user.GetUser(userId.(string))
 
-	if user.Token != userToken {
+	var storedToken string
+	switch tokenPurpose {
+	case PURP_ACCESS_TOKEN:
+		storedToken = *user.AccessToken
+	case PURP_FORGOT_PASSWORD:
+		storedToken = *user.PassToken
+	}
+
+	if storedToken != userToken {
 		err = errors.New("ERR_WRONG_AUTHORIZATION")
 		return User{}, err
 	}
-
 	return user, nil
 }
