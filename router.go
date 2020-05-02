@@ -5,10 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-<<<<<<< HEAD
-=======
 	"time"
->>>>>>> fix conflict and apply stash
 
 	"github.com/humamfauzi/go-registration/utils"
 )
